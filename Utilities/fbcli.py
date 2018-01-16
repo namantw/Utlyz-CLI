@@ -1,6 +1,8 @@
 from bs4 import BeautifulSoup
 import mechanize
 import click
+import fbchat
+from getpass import getpass
 
 '''
 A command line application that allows you to perform tasks
@@ -31,7 +33,7 @@ def authenticate(browser,url,email,pwd):
 @click.option('--bdays',is_flag=True,help='Gives the names of those who have their birthdays today')
 
 
-def cli(fr,msg,notifs,bdays):
+def cli(fr,msg,notifs,bdays,wish):
 	browser = mechanize.Browser()
 	browser.set_handle_robots(False)	#Allows everything to be written
 	cookies = mechanize.CookieJar()
@@ -42,7 +44,20 @@ def cli(fr,msg,notifs,bdays):
 	bday_people_names=[]
 	i=1
 	try:
-		if(bdays):
+		if(wish):
+			url = 'http://www.facebook.com/events/birthdays/'
+			soup = authenticate(browser,url,email,pwd)	#Parses the html and stores in 'soup'
+			bday_box = soup.find('div',attrs={'class':'_4-u2 _tzh _fbBirthdays__todayCard _4-u8'})	#Finds the html with the div tags and given attributes
+			bday_box_narrow = bday_box.find_all('a',attrs={'data-hovercard-prefer-more-content-show':'1'})		#Finds all a tags with the given attirbute. This will be the list of bdays
+			client = fbchat.Client(email,getpass())
+			for a in bday_box_narrow:
+				friends = client.getUsers(a.text) # return a list of names of users with the name
+				friend = friends[0]
+				msg = 'Happy Birthday'
+				sent = client.send(friend.uid, msg)
+				if(sent):
+					click.echo("Sent the birthday wishes.\n")
+		elif(bdays):
 			url = 'http://www.facebook.com/events/birthdays/'
 			soup = authenticate(browser,url,email,pwd)	#Parses the html and stores in 'soup'
 			bday_box = soup.find('div',attrs={'class':'_4-u2 _tzh _fbBirthdays__todayCard _4-u8'})	#Finds the html with the div tags and given attributes
